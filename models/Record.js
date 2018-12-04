@@ -16,7 +16,7 @@ class Record extends Model {
                 checkpointId: { type: 'integer' },
                 direction: { type: 'string', minLength: 1, maxlength: 1 },
                 datetime: { type: 'datetime' },
-                delay: { type: 'time' }
+                delay: { type: 'integer' }
             }
         };
     }

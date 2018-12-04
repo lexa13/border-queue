@@ -5,12 +5,16 @@ require('./knexinit');
 const axios = require("axios");
 const $ = require("jquery");
 const { JSDOM } = require('jsdom');
+
+const datetimeUtils = require('./utils/datetime');
 const CountryModel = require("./models/Country");
 const CheckpointModel = require("./models/Checkpoint");
 const RecordModel = require("./models/Record");
 const directions = ["i", "o"];
 
-(async function () {
+importStart();
+
+async function importStart() {
     console.log(await CheckpointModel.query());
     console.log(await RecordModel.query());
   const countries = await CountryModel.query();
@@ -22,8 +26,7 @@ const directions = ["i", "o"];
       handleCheckponts(checkpoints, country.id, dir);
     }
   }
-  const direction = await getCheckpoints("hu", "o");
-})();
+}
 
 async function handleCheckponts(checkpoints, countryId, direction) {
   const datetime = new Date;
@@ -34,15 +37,22 @@ async function handleCheckponts(checkpoints, countryId, direction) {
         Checkpoint = await CheckpointModel.query()
           .insert({name: checkpoints[i].name, countryId});
         console.log("Inserted: ", Checkpoint);
+    } else {
+      Checkpoint = Checkpoint[0];
     }
-    const Record = await RecordModel.query()
-      .insert({
-        checkpointId: Checkpoint.id,
-        direction,
-        datetime,
-        delay: checkpoints[i].time
-      });
-    console.log("Inserted: ", Record);
+
+    const delay = datetimeUtils.hhmm2mm(checkpoints[i].time);
+
+    if (false !== delay) {
+      const Record = await RecordModel.query()
+        .insert({
+          checkpointId: Checkpoint.id,
+          direction,
+          datetime,
+          delay
+        });
+      console.log("Inserted: ", Record);
+    }
   }
 }
 

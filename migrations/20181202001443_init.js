@@ -24,7 +24,7 @@ exports.up = function(knex, Promise) {
         .onDelete('CASCADE');
       table.string('direction');
       table.timestamp('datetime');
-      table.time('time');
+      table.integer('delay');
     })
 };
 
