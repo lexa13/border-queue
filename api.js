@@ -1,92 +1,31 @@
 'use strict';
 
 const { transaction } = require('objection');
-const Person = require('./models/Person');
-const Movie = require('./models/Movie');
+const CountryModel = require('./models/Country');
+const CheckpointModel = require('./models/Checkpoint');
+const RecordModel = require('./models/Record');
 
 module.exports = router => {
-  // Create a new Person. Because we use `insertGraph` you can pass relations
-  // with the person and they also get inserted and related to the person. If
-  // all you want to do is insert a single person, `insertGraph` and `allowInsert`
-  // can be replaced by `insert(req.body)`.
-  router.post('/persons', async (req, res) => {
-    const graph = req.body;
-
-    // It's a good idea to wrap `insertGraph` call in a transaction since it
-    // may create multiple queries.
-    const insertedGraph = await transaction(Person.knex(), trx => {
-      return (
-        Person.query(trx)
-          // For security reasons, limit the relations that can be inserted.
-          .allowInsert('[pets, children.[pets, movies], movies, parent]')
-          .insertGraph(graph)
-      );
-    });
-
-    res.send(insertedGraph);
+  router.get('/coutries', async (req, res) => {
+    const countries = await CountryModel.query();
+    res.send(countries);
   });
 
-  // Patch a single Person.
-  router.patch('/persons/:id', async (req, res) => {
-    const person = await Person.query().patchAndFetchById(req.params.id, req.body);
-
-    res.send(person);
+  router.get('/countries/:id/checkpoints', async (req, res) => {
+    const checkpoints = await CheckpointModel.query()
+      .where('countryId', req.params.id);
+    res.send(checkpoints);
   });
 
-  // Patch a person and upsert its relations.
-  router.patch('/persons/:id/upsert', async (req, res) => {
-    const graph = req.body;
-
-    // Make sure only one person was sent.
-    if (Array.isArray(graph)) {
-      throw createStatusCodeError(400);
-    }
-
-    // Make sure the person has the correct id because `upsertGraph` uses the id fields
-    // to determine which models need to be updated and which inserted.
-    graph.id = parseInt(req.params.id, 10);
-
-    // It's a good idea to wrap `upsertGraph` call in a transaction since it
-    // may create multiple queries.
-    const upsertedGraph = await transaction(Person.knex(), trx => {
-      return (
-        Person.query(trx)
-          // For security reasons, limit the relations that can be upserted.
-          .allowUpsert('[pets, children.[pets, movies], movies, parent]')
-          .upsertGraph(graph)
-      );
-    });
-
-    res.send(upsertedGraph);
-  });
-
-  // Get multiple Persons. The result can be filtered using query parameters
-  // `minAge`, `maxAge` and `firstName`. Relations can be fetched eagerly
-  // by giving a relation expression as the `eager` query parameter.
-  router.get('/persons', async (req, res) => {
-    // We don't need to check for the existence of the query parameters because
-    // we call the `skipUndefined` method. It causes the query builder methods
-    // to do nothing if one of the values is undefined.
-    const persons = await Person.query()
-      .skipUndefined()
-      // For security reasons, limit the relations that can be fetched.
-      .allowEager('[pets, parent, children.[pets, movies.actors], movies.actors.pets]')
-      .eager(req.query.eager)
-      .where('age', '>=', req.query.minAge)
-      .where('age', '<', req.query.maxAge)
-      .where('firstName', 'like', req.query.firstName)
-      .orderBy('firstName')
-      // Order eagerly loaded pets by name.
-      .modifyEager('[pets, children.pets]', qb => qb.orderBy('name'));
-
-    res.send(persons);
-  });
-
-  // Delete a person.
-  router.delete('/persons/:id', async (req, res) => {
-    await Person.query().deleteById(req.params.id);
-
-    res.send({});
+  router.get('/countries/:countryId/checkpoints/:checkpointId/records/from/:from/to/:to/:dir', async (req, res) => {
+    const checkpointId = req.params.checkpointId;
+    const from = new Date(req.params.from);
+    const to = new Date(req.params.to);
+    from.setHours(from.getHours()+2);
+    to.setHours(to.getHours()+2);
+    const records = await RecordModel.query()
+      .where('checkpointId', checkpointId);
+    res.send(checkpoints);
   });
 
   // Add a child for a Person.
